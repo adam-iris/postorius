@@ -4,10 +4,32 @@
 {% load staticfiles %}
 {% block main %}
 
+{% if messages %}
+  <div>
+    {% for message in messages %}
+      <div class="alert{% if message.tags %} alert-{{ message.tags }}{% endif %}">{{ message }}</div>
+    {% endfor %}
+  </div>
+{% endif %}
+
+<div>{{ server_name }}</div>
+
 <div id="container">
     <p><strong>Login with username and password or with Mozilla Persona</strong></p>
 
+  <div>
+    <a title="Google" class="" 
+     href="{% url 'socialauth_begin' "google-oauth2" %}">Google</a>
+  </div>  
+
   <div class="mm_login">
+    {% if form.errors %}
+    <div class="alert alert-warning">
+      Errors!
+        {{ form.non_field_errors }}
+        {{ form.errors }}
+    </div>
+    {% endif %}
     <form action="" method="post" class="login mm_clear well"> {% csrf_token %}
       {{ form.as_p }}
       <div class="field">
@@ -15,7 +37,7 @@
       </div>
     </form>
   </div>  
-  
+
   <div class="mm_login_b">  
     <form method="post" action="{% url 'socialauth_complete' "browserid" %}"> {% csrf_token %}
       <input type="hidden" name="assertion" value="" />

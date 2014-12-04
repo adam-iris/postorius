@@ -43,6 +43,8 @@ from postorius.auth.decorators import *
 from postorius.views.generic import MailmanUserView
 from smtplib import SMTPException
 
+from django.contrib.sites.models import get_current_site
+
 
 class UserMailmanSettingsView(MailmanUserView):
     """The logged-in user's global Mailman Preferences."""
@@ -228,7 +230,7 @@ class UserSubscriptionsView(MailmanUserView):
 
 class AddressActivationView(TemplateView):
     """
-    Starts the process of adding additional email addresses to a mailman user 
+    Starts the process of adding additional email addresses to a mailman user
     record. Forms are processes and email notifications are sent accordingly.
     """
 
@@ -310,16 +312,16 @@ def user_logout(request):
 
 def user_login(request, template='postorius/login.html'):
     if request.method == 'POST':
-        form = AuthenticationForm(request.POST)
-        user = authenticate(username=request.POST.get('username'),
-                            password=request.POST.get('password'))
-        if user is not None:
+        form = AuthenticationForm(request, request.POST)
+        if form.is_valid():
+            user = form.get_user()
             if user.is_active:
                 login(request, user)
                 return redirect(request.GET.get('next', 'list_index'))
     else:
         form = AuthenticationForm()
-    return render_to_response(template, {'form': form},
+    server_name = request.get_host()
+    return render_to_response(template, {'form': form, 'server_name': server_name},
                               context_instance=RequestContext(request))
 
 
@@ -405,8 +407,8 @@ def _add_address(request, user_email, address):
 def address_activation_link(request, activation_key):
     """
     Checks the given activation_key. If it is valid, the saved address will be
-    added to mailman. Also, the corresponding profile record will be removed. 
-    If the key is not valid, it will be ignored. 
+    added to mailman. Also, the corresponding profile record will be removed.
+    If the key is not valid, it will be ignored.
     """
     try:
         profile = AddressConfirmationProfile.objects.get(
